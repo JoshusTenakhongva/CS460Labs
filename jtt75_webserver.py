@@ -118,7 +118,10 @@ def main():
                                 
                                 # Use the connection socket to send the reply encoded as bytestream
                                 
-                                reply=connectToServer( url, requestLineString, domain )
+                                replyString=connectToServer( url, requestLineString, domain )
+                                replyEncoded = bytearray( replyString, 'utf-8' )
+                                
+                                print("Finished connecting to origin server")
 
                                 print("\n\nReceived request")
                                 print("======================")
@@ -126,10 +129,11 @@ def main():
                                 print("======================")
                                 print("\n\nReplied with")
                                 print("======================")
-                                print(reply.rstrip())
+                                print(replyString)#.rstrip())
                                 print("======================")
                                 
-                                connection_socket.send( reply )                                
+                                
+                                connection_socket.sendall( replyEncoded )                                
                                 server_socket.close()
 
 # End of Main Method
@@ -203,11 +207,22 @@ def connectToServer( url, request, domain ):
 
 	hostIP = socket.gethostbyname( domain )
 	with Socket(socket.AF_INET, socket.SOCK_STREAM) as outside_socket:
-		outside_socket.connect(( hostIP, 80 ))
+
+		outside_socket.connect(( domain, 80 ))
+		outside_socket.settimeout( 5 )
 		outside_socket.sendall( bytearray( request, 'utf-8' ))
 		
-		response = outside_socket.recv( 1024 )
+		stillReceiving = True
+		response = ""
 		
+		print( "before receive" )
+		while stillReceiving: 
+			try: 
+				response += outside_socket.recv( 1024 ).decode('utf-8')
+			except: 
+				stillReceiving = False
+			
+		print( "after receive" )
 		outside_socket.close()
 		return response
 
